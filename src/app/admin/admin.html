@@ -1,0 +1,173 @@
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand-name">Gestor de tareas</span>
+    <span class="brand-date">{{ fechaHoy() }}</span>
+  </div>
+  <button class="btn btn-export" (click)="abrirNueva()">+ Nueva tarea</button>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">{{ total }}</div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-label">Pendientes</div>
+      <div class="stat-value">{{ pendientes }}</div>
+    </div>
+    <div class="stat-card stat-done">
+      <div class="stat-label">Completadas</div>
+      <div class="stat-value">{{ completadas }}</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar por título o asignado..."
+        [(ngModel)]="busqueda"
+        (ngModelChange)="aplicarFiltros()">
+    </div>
+    <select class="select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="completada">Completada</option>
+    </select>
+    <select class="select" [(ngModel)]="filtroPrioridad" (ngModelChange)="aplicarFiltros()">
+      <option value="">Todas las prioridades</option>
+      <option value="urgente">Urgente</option>
+      <option value="normal">Normal</option>
+    </select>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-wrap">
+    <div *ngIf="cargando" class="empty-state">Cargando tareas...</div>
+
+    <table *ngIf="!cargando">
+      <thead>
+        <tr>
+          <th class="col-tarea">Tarea</th>
+          <th class="col-asignados">Asignados</th>
+          <th class="col-estado">Estado</th>
+          <th class="col-prioridad">Prioridad</th>
+          <th class="col-acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="tareasFiltradas.length === 0">
+          <td colspan="5">
+            <div class="empty-state">No hay tareas.</div>
+          </td>
+        </tr>
+        <tr *ngFor="let t of tareasFiltradas">
+          <td>
+            <div class="td-title">{{ t.titulo }}</div>
+            <div class="td-desc" *ngIf="t.descripcion">{{ t.descripcion }}</div>
+          </td>
+          <td class="td-assignees">{{ t.asignados }}</td>
+          <td>
+            <span class="badge" [ngClass]="t.estado === 'completada' ? 'badge-done' : 'badge-pending'">
+              <span class="badge-dot"></span>
+              {{ t.estado === 'completada' ? 'Completada' : 'Pendiente' }}
+            </span>
+          </td>
+          <td>
+            <span class="priority-wrap">
+              <span class="priority-dot" [ngClass]="t.urgente ? 'urgent' : 'normal'"></span>
+              <span class="priority-label" [ngClass]="t.urgente ? 'urgent' : 'normal'">
+                {{ t.urgente ? 'Urgente' : 'Normal' }}
+              </span>
+            </span>
+          </td>
+          <td>
+            <div class="row-actions">
+              <button class="icon-btn" title="Editar" (click)="abrirEditar(t)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="icon-btn danger" title="Eliminar" (click)="eliminar(t.id)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="overlay" [class.open]="modalAbierto" (click)="cerrarModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <span class="modal-title">{{ editandoId ? 'Editar tarea' : 'Nueva tarea' }}</span>
+      <button class="icon-btn" (click)="cerrarModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="field">
+      <label>Título</label>
+      <input type="text" [(ngModel)]="form.titulo" placeholder="Ej: Revisar inventario bodega 2">
+    </div>
+
+    <div class="field">
+      <label>Descripción</label>
+      <textarea [(ngModel)]="form.descripcion" placeholder="Detalles de la tarea..."></textarea>
+    </div>
+
+    <div class="urgent-toggle" (click)="form.urgente = !form.urgente">
+      <span class="urgent-toggle-label">
+        <span class="urg-dot"></span>
+        Marcar como urgente
+      </span>
+      <div class="switch" [class.on]="form.urgente"></div>
+    </div>
+
+    <div class="field">
+      <label>Asignar a</label>
+      <div class="assign-modes">
+        <button class="assign-mode-btn" [class.active]="assignMode === 'todos'"
+          (click)="setAssignMode('todos')">Todos los empleados</button>
+        <button class="assign-mode-btn" [class.active]="assignMode === 'seleccion'"
+          (click)="setAssignMode('seleccion')">Seleccionar empleados</button>
+      </div>
+      <input
+        *ngIf="assignMode === 'seleccion'"
+        type="text"
+        class="assign-input"
+        [(ngModel)]="inputAsignados"
+        placeholder="Ej: Carlos, María, Pedro">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardar()">Guardar tarea</button>
+    </div>
+
+  </div>
+</div>

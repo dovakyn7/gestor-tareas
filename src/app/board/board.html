@@ -1,0 +1,69 @@
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet">
+<!-- Header -->
+<header class="app-header">
+  <div class="header-top">
+    <span class="header-title">mis tareas</span>
+    <span class="header-date">{{ fechaHoy() }}</span>
+  </div>
+  <div class="header-counter">
+    <span>{{ pendientes.length }}</span> pendientes ·
+    <span>{{ completadas.length }}</span> completadas
+  </div>
+</header>
+
+<!-- Body -->
+<div class="scroll-body">
+
+  <div *ngIf="cargando" class="empty-state">Cargando tareas...</div>
+
+  <ng-container *ngIf="!cargando">
+
+    <!-- Pendientes -->
+    <div class="section-label">Pendientes</div>
+
+    <div *ngIf="pendientes.length === 0" class="empty-state">
+      No hay tareas pendientes.
+    </div>
+
+    <div *ngFor="let t of pendientes" class="task-card" [class.is-urgent]="t.urgente">
+      <div class="card-title">{{ t.titulo }}</div>
+      <div class="card-desc" *ngIf="t.descripcion">{{ t.descripcion }}</div>
+      <div class="card-footer">
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <span class="badge-urgent" *ngIf="t.urgente">
+            <span class="dot"></span>Urgente
+          </span>
+          <span class="card-assignee">→ {{ t.asignados }}</span>
+        </div>
+        <button class="btn-complete" (click)="marcarCompletada(t.id)">
+          Marcar como hecha
+        </button>
+      </div>
+    </div>
+
+    <!-- Completadas (visibles hasta 12h después) -->
+    <ng-container *ngIf="completadas.length > 0">
+      <div class="divider"></div>
+      <div class="section-label">Completadas hoy</div>
+
+      <div *ngFor="let t of completadas" class="task-card is-done">
+        <div class="card-title">{{ t.titulo }}</div>
+        <div class="card-footer">
+          <span class="card-assignee">→ {{ t.asignados }}</span>
+          <div class="done-indicator">
+            <span class="check-circle">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </span>
+            Hecha
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </ng-container>
+</div>
